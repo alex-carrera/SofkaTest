@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeyboardAvoidingView, Platform, Text, TextInput, View } from 'react-native';
-import { globaStyles, globalColors } from '../../theme/theme';
-import { RouteProp, useRoute } from '@react-navigation/native';
+import { globaStyles } from '../../theme/theme';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { RootStackParams } from '../../routes/ProductsNavigator';
 import { PrimaryButton, SecondaryButton } from '../../../components/shared/ButtonComponents';
+import ProductService from '../../../services/ProductService';
 
 interface FormErrors {
     id: string;
@@ -15,14 +16,15 @@ interface FormErrors {
 }
 
 export const ProductFormScreen = () => {
+    const navigation = useNavigation();
     const params = useRoute<RouteProp<RootStackParams, 'Product'>>().params;
 
     const [id, setId] = useState<string>(params.id);
     const [name, setName] = useState<string>(params.name);
     const [description, setDescription] = useState<string>(params.description);
     const [logo, setLogo] = useState<string>(params.logo);
-    const [dateRelease, setDateRelease] = useState<string>(params.date_release.substring(0, 10));
-    const [dateRevision, setDateRevision] = useState<string>(params.date_revision.substring(0, 10));
+    const [dateRelease, setDateRelease] = useState<string>(params.date_release ? params.date_release.substring(0, 10) : '');
+    const [dateRevision, setDateRevision] = useState<string>(params.date_revision ? params.date_revision.substring(0, 10) : '');
     const [errors, setErrors] = useState<FormErrors>({
         id: '',
         name: '',
@@ -31,6 +33,15 @@ export const ProductFormScreen = () => {
         dateRelease: '',
         dateRevision: '',
     });
+
+    useEffect(() => {
+        setId(params.id);
+        setName(params.name);
+        setDescription(params.description);
+        setLogo(params.logo);
+        setDateRelease(params.date_release ? params.date_release.substring(0, 10) : '');
+        setDateRevision(params.date_revision ? params.date_revision.substring(0, 10) : '');
+    }, [params]);
 
     const validateForm = () => {
         let errors: FormErrors = {
@@ -42,8 +53,8 @@ export const ProductFormScreen = () => {
             dateRevision: '',
         };
 
-        if (id.length > 10 || id.length < 3) errors.id = 'ID no válido';
         if (!id) errors.id = 'Este campo es requerido';
+        if (id.length > 10 || id.length < 3) errors.id = 'ID no válido';
         if (!name) errors.name = 'Este campo es requerido';
         if (name.length > 100 || name.length < 5) errors.name = 'Nombre no válido';
         if (!description) errors.description = 'Este campo es requerido';
@@ -52,33 +63,72 @@ export const ProductFormScreen = () => {
         if (!dateRelease) errors.dateRelease = 'Este campo es requerido';
         if (!dateRevision) errors.dateRevision = 'Este campo es requerido';
 
-        // Validación de fecha de liberación
-        const today = new Date().toISOString().substring(0, 10);
-        if (dateRelease < today) errors.dateRelease = 'La fecha de liberación debe ser igual o posterior a hoy';
 
-        const releaseDate = new Date(dateRelease);
-        const revisionDate = new Date(dateRevision);
-        const oneYearLater = new Date(releaseDate.getFullYear() + 1, releaseDate.getMonth(), releaseDate.getDate())
-            .toISOString()
-            .substring(0, 10);
+        if (dateRelease) {
+            const today = new Date().toISOString().substring(0, 10);
+            if (dateRelease < today) errors.dateRelease = 'La fecha de liberación debe ser igual o posterior a hoy';
+        }
 
-        if (dateRevision !== oneYearLater) {
-            errors.dateRevision = `La fecha de revisión debe ser exactamente un año posterior a la fecha de liberación (${oneYearLater})`;
+        if (dateRelease && dateRevision) {
+            const releaseDate = new Date(dateRelease);
+            const revisionDate = new Date(dateRevision);
+            const oneYearLater = new Date(releaseDate.getFullYear() + 1, releaseDate.getMonth(), releaseDate.getDate())
+                .toISOString()
+                .substring(0, 10);
+
+            if (dateRevision !== oneYearLater) {
+                errors.dateRevision = `La fecha de revisión debe ser exactamente un año posterior a la fecha de liberación (${oneYearLater})`;
+            }
         }
 
         setErrors(errors);
         return Object.keys(errors).every((key) => errors[key as keyof FormErrors] === '');
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (validateForm()) {
-            
-            setId(params.id);
-            setName(params.name);
-            setDescription(params.description);
-            setLogo(params.logo);
-            setDateRelease(params.date_release.substring(0, 10));
-            setDateRevision(params.date_revision.substring(0, 10));
+
+            try {
+                const existingProduct = await ProductService.verificationProductos(id);
+                if (existingProduct) {
+
+                    const formData = {
+                        id,
+                        name,
+                        description,
+                        logo,
+                        date_release: dateRelease,
+                        date_revision: dateRevision,
+                    };
+                    await ProductService.putProductos(formData);
+                    console.log('Producto actualizado correctamente');
+                } else {
+
+                    const formData = {
+                        id,
+                        name,
+                        description,
+                        logo,
+                        date_release: dateRelease,
+                        date_revision: dateRevision,
+                    };
+                    await ProductService.postProductos(formData);
+                    console.log('Producto creado correctamente');
+                }
+
+
+                navigation.goBack();
+            } catch (error) {
+                console.error('Error al verificar/producto:', error);
+            }
+
+
+            setId('');
+            setName('');
+            setDescription('');
+            setLogo('');
+            setDateRelease('');
+            setDateRevision('');
             setErrors({
                 id: '',
                 name: '',
@@ -95,8 +145,8 @@ export const ProductFormScreen = () => {
         setName(params.name);
         setDescription(params.description);
         setLogo(params.logo);
-        setDateRelease(params.date_release.substring(0, 10));
-        setDateRevision(params.date_revision.substring(0, 10));
+        setDateRelease(params.date_release ? params.date_release.substring(0, 10) : '');
+        setDateRevision(params.date_revision ? params.date_revision.substring(0, 10) : '');
         setErrors({
             id: '',
             name: '',
@@ -113,7 +163,7 @@ export const ProductFormScreen = () => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
             style={globaStyles.container}
         >
-            <Text style={{ marginBottom: 10, fontSize: 30 }}>Formulario de Registro </Text>
+            <Text style={{ marginBottom: 10, fontSize: 30 }}>Formulario de Registro</Text>
 
             <Text style={{ marginBottom: 5 }}>ID</Text>
             <TextInput

@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, TextInput, FlatList } from 'react-native';
-import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { globaStyles } from '../../theme/theme';
 import { RootStackParams } from '../../routes/ProductsNavigator';
 import { ProductComponent } from '../../../components/shared/ProductComponent';
@@ -19,27 +19,26 @@ interface Producto {
 export const ProductsScreen = () => {
     const [error, setError] = useState<string | null>(null);
     const [productos, setProductos] = useState<Producto[]>([]);
-    const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]); 
+    const [productosFiltrados, setProductosFiltrados] = useState<Producto[]>([]);
     const [search, setSearch] = useState('');
 
     const navigation = useNavigation<NavigationProp<RootStackParams>>();
 
-    useEffect(() => {
-        const fetchProductos = async () => {
-            try {
-                const productosData = await ProductService.getProductos();
-                setProductos(productosData);
-                setProductosFiltrados(productosData); // Inicialmente, mostramos todos los productos
-            } catch (error: any) {
-                setError(error.message);
-            }
-        };
+    const fetchProductos = async () => {
+        try {
+            const productosData = await ProductService.getProductos();
+            setProductos(productosData);
+            setProductosFiltrados(productosData); 
+        } catch (error: any) {
+            setError(error.message);
+        }
+    };
 
+    useEffect(() => {
         fetchProductos();
     }, []);
 
     useEffect(() => {
-
         if (search.trim() === '') {
             setProductosFiltrados(productos);
         } else {
@@ -49,6 +48,12 @@ export const ProductsScreen = () => {
             setProductosFiltrados(filteredProducts);
         }
     }, [search, productos]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchProductos(); 
+        }, [])
+    );
 
     return (
         <KeyboardAvoidingView

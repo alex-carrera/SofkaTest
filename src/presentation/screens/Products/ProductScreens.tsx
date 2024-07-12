@@ -4,6 +4,7 @@ import { globaStyles } from '../../theme/theme';
 import { NavigationProp, RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { RootStackParams } from '../../routes/ProductsNavigator';
 import { PrimaryButton, SecondaryButton, WarningButton } from '../../../components/shared/ButtonComponents';
+import ProductService from '../../../services/ProductService';
 
 interface ProductScreenProps {
     id: string;
@@ -11,7 +12,7 @@ interface ProductScreenProps {
     description: string;
     logo: string;
     date_release: string;
-    date_revision: string; 
+    date_revision: string;
 }
 
 export const ProductScreen = () => {
@@ -26,14 +27,14 @@ export const ProductScreen = () => {
     } = route.params as ProductScreenProps;
 
     const formatDate = (dateString: string | undefined): string => {
-        if (!dateString) return ''; 
+        if (!dateString) return '';
         try {
-            // Cortar la cadena para obtener solo YYYY-MM-DD
+
             const isoDate = dateString.substring(0, 10);
             return isoDate;
         } catch (error) {
             console.error('Error formatting date:', error);
-            return ''; 
+            return '';
         }
     };
 
@@ -42,6 +43,16 @@ export const ProductScreen = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const navigation = useNavigation<NavigationProp<RootStackParams, 'Product'>>();
+
+    const handleDeleteProduct = async () => {
+        try {
+            await ProductService.deleteProductos(id); 
+            navigation.navigate('Products'); 
+            setModalVisible(false); 
+        } catch (error) {
+            console.error('Error al eliminar el producto:', error);
+        }
+    };
 
     return (
         <View style={globaStyles.container}>
@@ -97,10 +108,7 @@ export const ProductScreen = () => {
                     <View style={globaStyles.modalView}>
                         <Text style={globaStyles.modalText}>{`¿Estás seguro de eliminar el producto ${name}?`}</Text>
                         <PrimaryButton
-                            onPress={() => {
-                                navigation.navigate('Products');
-                                setModalVisible(false);
-                            }}
+                            onPress={handleDeleteProduct}
                             label="Confirmar"
                         />
                         <SecondaryButton

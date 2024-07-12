@@ -1,17 +1,15 @@
 import axios from 'axios'
 import { BASE_URL } from '@env';
 
+const authHeader = () => ({
+    'authorId': '1',
+    'Content-Type': 'application/json'
+});
 
 class ProductsService {
     async getProductos() {
-
         try {
-            const res = await axios.request({
-                url: BASE_URL,
-                headers: {
-                    'authorId': '1'
-                }
-            });
+            const res = await axios.get(BASE_URL, { headers: authHeader() });
             return res.data;
         } catch (error) {
             console.error('Error fetching products:', error);
@@ -20,24 +18,47 @@ class ProductsService {
     }
 
     async postProductos(data) {
-        const res = await axios.post(process.env.BASE_URL, data, { headers: authHeader() });
-        return res.data;
+        try {
+            const res = await axios.post(BASE_URL, data, { headers: authHeader() });
+            return res.data;
+        } catch (error) {
+            console.error('Error posting product:', error);
+            throw error;
+        }
     }
 
     async putProductos(data) {
-        const res = await axios.put(process.env.BASE_URL, data, { headers: authHeader() });
-        return res.data;
+        try {
+            const res = await axios.put(BASE_URL, data, { headers: authHeader() });
+            return res.data;
+        } catch (error) {
+            console.error('Error updating product:', error);
+            throw error;
+        }
     }
+    
 
     async deleteProductos(id) {
-        const res = await axios.put(process.env.BASE_URL + `?${id}`, data, { headers: authHeader() });
-        return res.data;
+        try {
+            const res = await axios.delete(`${BASE_URL}?id=${id}`, { headers: authHeader() });
+            return res.data;
+        } catch (error) {
+            console.error('Error deleting product:', error);
+            throw error;
+        }
     }
+    
 
     async verificationProductos(id) {
-        const res = await axios.put(process.env.BASE_URL + `/verification?${id}`, data, { headers: authHeader() });
-        return res.data;
+        try {
+            const res = await axios.get(`${BASE_URL}/verification?id=${id}`, {headers: authHeader()});
+            return res.data;
+        } catch (error) {
+            console.error('Error verifying product:', error);
+            throw error;
+        }
     }
+    
 }
 
 export default new ProductsService();
