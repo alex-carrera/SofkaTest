@@ -98,11 +98,11 @@ export const ProductScreen = () => {
                     label="Eliminar"
                 />
             </View>
-
             <Modal
                 animationType="slide"
                 transparent={true}
                 visible={modalVisible}
+                testID="delete-modal" 
             >
                 <View style={globaStyles.centeredView}>
                     <View style={globaStyles.modalView}>
